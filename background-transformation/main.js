@@ -1,4 +1,4 @@
-const fontFileName = 'fonts/FiraSansMedium.woff';
+const fontFileName = '../fonts/FiraSansMedium.woff';
 
 async function init() {
 
@@ -7,10 +7,12 @@ async function init() {
 
   try {
       const data = await fontFile.arrayBuffer()
-      parsedFont = opentype.parse(data)
+      parsedFont = window.parsedFont = opentype.parse(data)
   } catch (err) {
       console.error(err)
   }
+
+  let fontSize = 2000
 
   // let canvas = document.createElement('canvas')
   // document.body.appendChild(canvas)
@@ -20,8 +22,17 @@ async function init() {
   // canvas.style.height = '100%'
 
   // let context = canvas.getContext('2d')
+  let scale = 1 / parsedFont.unitsPerEm * fontSize
+  let maxHeight = (parsedFont.ascender - parsedFont.descender) * scale
 
-  window.path = parsedFont.getPath('g', window.innerWidth / 2 - 400, window.innerHeight - 100, 1000)
+  console.log(scale, maxHeight)
+
+  let testPath = parsedFont.getPath('g', 0, 0, fontSize)
+  let bbox = testPath.getBoundingBox()
+  let glyphWidth = bbox.x2 - bbox.x1
+  let glyphHeight = bbox.y2 - bbox.y1
+  
+  window.path = parsedFont.getPath('g', window.innerWidth / 2 - glyphWidth / 2, window.innerHeight - (bbox.y2 * scale) - (window.innerHeight - glyphHeight) / 2, fontSize)
   let commands = path.commands
 
   var svg = d3.select("body").append("svg")
@@ -41,13 +52,23 @@ async function init() {
     nextForm()
   })
 
+  nextForm()
+  setInterval(() => nextForm(), 5000)
+
   function nextForm() {
     let chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()'
     let randomChar = chars.charAt(Math.floor(Math.random() * chars.length))
 
     let pathFrom = path
     let numPreviousPoints = path.commands.length
-    let nextPath = parsedFont.getPath(randomChar, window.innerWidth / 2 - 400, window.innerHeight - 100, 1000)
+    
+    let nextFontSize = Math.random() > 0.2 ? 2000 : 1200
+    let testPath = parsedFont.getPath(randomChar, 0, 0, nextFontSize)
+    let bbox = testPath.getBoundingBox()
+    let glyphWidth = bbox.x2 - bbox.x1
+    let glyphHeight = bbox.y2 - bbox.y1
+    
+    let nextPath = parsedFont.getPath(randomChar, window.innerWidth / 2 - glyphWidth / 2, window.innerHeight - (bbox.y2 * scale) - (window.innerHeight - glyphHeight) / 2, nextFontSize)
     let numNextPoints = nextPath.commands.length
 
     let transitionStartingPath = new opentype.Path()
@@ -80,7 +101,8 @@ async function init() {
 
     svgPath
       .transition()
-      .ease(d3.easeLinear)
+      // .ease(d3.easeLinear)
+      .ease(d3.easeSinInOut)
       .duration(5000)
       .attrTween("d", pathTween(nextPath.toPathData(), 24))
   }

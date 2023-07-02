@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0">
+  <title></title>
+</head>
+
+<body>
+  <script src="../lib/opentype.js"></script>
+  <script src="../lib/d3.js"></script>
+
+  <!-- Load the libs -->
+  <script>
+    function loadStylesheet(href) {
+      let style = document.createElement('link')
+      if (href.endsWith('less')) {
+        style.rel = 'stylesheet/less'
+      } else {
+        style.rel = 'stylesheet'
+      }
+      style.type = 'text/css'
+      // Defeat the browser cache
+      style.href = `${href}?rand=${Math.random()}`
+      document.querySelector('head').appendChild(style)  
+    }
+
+    function loadScript(href) {
+      let script = document.createElement('script')
+      // Defeat the browser cache
+      script.src = `${href}?rand=${Math.random()}`
+      document.querySelector('body').appendChild(script)  
+    }
+  </script>
+
+  <!-- Load the stylesheet -->
+  <script>
+    loadStylesheet('style.less')
+  </script>
+
+  <!-- Parse the stylesheet -->
+  <script src="../lib/less.min.js"></script>
+
+  <script type="module">
+    import(`./main.js?rand=${Math.random()}`)
+  </script>
+
+</body>
+</html>

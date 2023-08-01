@@ -39,6 +39,8 @@ class CoordinateSystem {
   registerEventListeners(element) {
     // Pan
     element.addEventListener('pointerdown', (event) => {
+      event.stopPropagation()
+      
       if (!this.pointerId) {
         this.pointerId = event.pointerId
         this.mousedown = true

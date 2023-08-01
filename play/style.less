@@ -15,6 +15,15 @@ html, body {
   -webkit-touch-callout: none;
 }
 
+.background-container {
+  background: black;
+  position: fixed;
+  top: 0px;
+  left: 0px;
+  right: 0px;
+  bottom: 0px;
+}
+
 .asset-container {
   position: absolute;
   width: 100%;
@@ -33,17 +42,41 @@ html, body {
 .presentation-container {
   position: absolute;
   top: 0px;
-  right: 0px;
   left: 0px;
-  bottom: 0px;
   z-index: 50; // block pointer from hitting assets
+  width: 8000px;
+  height: 8000px;
+
+  img {
+    position: absolute;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+  }
+
+  video {
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none; 
+  }
+
+  .audio-symbol {
+    position: absolute;
+    background: #ccc;
+    width: 40px;
+    height: 40px;
+    border: 2px solid;
+    border-radius: 40px;
+  }
 }
 
 .jenny-holzer {
   
   transform: rotate(90deg);
-  width: 100vh;
-  height: 100vh;
+  width: 120vh;
+  height: 120vh;
   font-size: 50px;
   font-family: sans-serif;
   

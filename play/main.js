@@ -2,6 +2,14 @@ import assets from '../assets.js'
 import html from '../lib/nanohtml.es6.js'
 import morph from '../lib/nanomorph.es6.js'
 
+import LetterRoulette from './src/LetterRoulette.js'
+import JennyHolzer from './src/JennyHolzer.js'
+import GrowingLetter from './src/GrowingLetter.js'
+import PloppedVideo from './src/PloppedVideo.js'
+import AudioSymbol from './src/AudioSymbol.js'
+import TextHunk from './src/TextHunk.js'
+import CoordinateSystem from './CoordinateSystem.js'
+
 // stop long touch hold from popping up context menus
 document.addEventListener('contextmenu', (e) => false)
 
@@ -14,148 +22,187 @@ async function init() {
   document.body.appendChild(mainContainer)
   morph(mainContainer, html`
     <main>
+      <div class="background-container"></div>
       <div class="asset-container"></div>
       <div class="presentation-container"></div>
     </main>
   `)
   
+  let backgroundContainer = document.querySelector('.background-container')
   let assetContainer = document.querySelector('.asset-container')
   let presentationContainer = document.querySelector('.presentation-container')
+  
   loadAssets()
+  let soundEffects = _.indexBy(assets.soundEffects.map(asset => {
+    let effect = { name: asset.name, sound: new Audio(`../${asset.url}`) }
+    effect.play = () => effect.sound.play()
+    return effect
+  }), 'name')
+  
 
-  class LetterRoulette {
+  let app = {
+    coords: new CoordinateSystem({ zoomEnabled: false }),
+    currentPointer: null,
+    draggingElement: null,
+    ploppedVideos: [],
+    isMobile: (window.innerWidth < 800),
+    soundEffects: soundEffects,
+    presentationContainer: presentationContainer,
     
-    constructor(container, x, y) {
-      this.x = x
-      this.y = y - 60
-      this.container = container
-      this.el = html`<div class="letter-roulette"></div>`
-      this.el.style.position = 'absolute'
-      this.el.style.transform = 'translateX(-50%) translateY(-100%)'
-      this.el.style['font-size'] = '80px'
-      this.el.style.top = `${this.y}px`
-      this.el.style.left = `${this.x}px`
-      this.changeRate = 30 // chars per second
-      this.elapsedCounter = 0
-      this.character = 'A'
-      container.appendChild(this.el)
-    }
+    checkCollisions: (audioSymbol) => {
+      return app.ploppedVideos.filter(ploppedVideo => {
+        // console.log(ploppedVideo.x, audioSymbol.x, ploppedVideo.y, audioSymbol.y)
+        if (
+          (audioSymbol.x > ploppedVideo.x - ploppedVideo.el.offsetWidth / 2) &&
+          (audioSymbol.x < ploppedVideo.x + ploppedVideo.el.offsetWidth / 2) &&
+          (audioSymbol.y > ploppedVideo.y) &&
+          (audioSymbol.y < ploppedVideo.y + ploppedVideo.el.offsetHeight)
+        ) {
+          return true
+        }
+      })
+    },
 
-    step(msElapsed) {
-      this.elapsedCounter += msElapsed
-      if (this.elapsedCounter > (1 / this.changeRate) * 1000) {
-        this.elapsedCounter = 0
-        let chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()'
-        this.character = chars.charAt(Math.floor(Math.random() * chars.length))
-      }
-    }
+    growPloppedVideos: () => {
+      soundEffects['positive-bloop'].play()
+      app.ploppedVideos.forEach(v => v.grow())
+    },
 
-    render() {
-      this.el.innerHTML = this.character
-    }
+    shrinkPloppedVideos: (duration) => {
+      app.ploppedVideos.forEach(v => v.shrink(duration))
+    },
 
-    pointerUp() {
-      this.container.removeChild(this.el)
-    }
+    nextLevel: (ploppedVideo) => {
+      soundEffects['yahoo'].play()
+      // app.borders.show()
+      app.text = new TextHunk(app, ploppedVideo.lowerLeft().x, ploppedVideo.lowerLeft().y)
 
+      d3.select(backgroundContainer).style('background', 'radial-gradient(#0058cade, #0047a2)')
+        .transition()
+        .style('opacity', 1)
+        
+    }
   }
 
-  class GrowingLetter {
+  let notPlopped = true
+  app.coords.onChange(() => {
+    app.presentationContainer.style.top = `${app.coords.originY}px`
+    app.presentationContainer.style.left = `${app.coords.originX}px`
 
-    constructor(container, x, y) {
-      this.x = x
-      this.y = y - 20
-      this.growRate = 800 // fontSize per second
-      this.container = container
-      let chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()'
-      this.character = chars.charAt(Math.floor(Math.random() * chars.length))
-      this.el = html`<div class="growing-letter">${ this.character }</div>`
-      this.el.style.position = 'absolute'
-      // this.el.style['text-align'] = 'center'
-      this.el.style['transform'] = 'translateX(-50%) translateY(-100%)'
-      this.el.style.top = `${this.y}px`
-      this.el.style.left = `${this.x}px`
-      this.fontSize = 12
-      container.appendChild(this.el)
+    if (notPlopped && app.text && (-app.coords.originX > app.text.x + app.text.width - (3 * window.innerWidth / 4))) {
+      notPlopped = false
+      plopVideo()
     }
+  })
+  
+  function plopVideo() {
+    let x = -app.coords.originX + window.innerWidth / 3
+    let y = -app.coords.originY + window.innerHeight / 2 + 100
+    
+    let videoAsset = _.sample(allAssets.filter(a => a.type === 'video'))
+    let clonedEl = videoAsset.el.cloneNode()
 
-    step(msElapsed) {
-      this.fontSize += this.growRate * msElapsed / 1000
-    }
+    let ploppedVideo = new PloppedVideo(app, videoAsset.el.cloneNode(), x, y)
+    app.ploppedVideos.push(ploppedVideo)
 
-    render() {
-      this.el.style.fontSize = `${this.fontSize}px`
-    }
+    let padding = Math.min(200, window.innerWidth / 4)
+    let audioTargetX = x + videoAsset.el.offsetWidth / 2 + padding
 
-    pointerUp() {
-      this.container.removeChild(this.el)
-    }
-
+    let audio1 = new AudioSymbol(app, x, y, soundEffects['cooking'].sound, audioTargetX, y - 100, true)
+    let audio2 = new AudioSymbol(app, x, y, soundEffects['schwang'].sound, audioTargetX, y - 200)
+    let audio3 = new AudioSymbol(app, x, y, soundEffects['sigh'].sound, audioTargetX, y - 300)
   }
 
-  class JennyHolzer {
-
-    constructor(container, x, y) {
-      this.container = container
-      this.phrase = 'This kind of pleasure can only be defined as "aesthetic."'
-      this.el = html`
-        <div class="jenny-holzer" style="opacity: 0;">
-          <marquee scrollamount="30">${ this.phrase } ${ this.phrase }</marquee>
-          <marquee scrollamount="30" direction="right">${ this.phrase } ${ this.phrase }</marquee>
-          <marquee scrollamount="30">${ this.phrase } ${ this.phrase }</marquee>
-          <marquee scrollamount="30" direction="right">${ this.phrase } ${ this.phrase }</marquee>
-          <marquee scrollamount="30">${ this.phrase } ${ this.phrase }</marquee>
-          <marquee scrollamount="30" direction="right">${ this.phrase } ${ this.phrase }</marquee>
-          <marquee scrollamount="30">${ this.phrase } ${ this.phrase }</marquee>
-          <marquee scrollamount="30" direction="right">${ this.phrase } ${ this.phrase }</marquee>
-          <marquee scrollamount="30">${ this.phrase } ${ this.phrase }</marquee>
-          <marquee scrollamount="30" direction="right">${ this.phrase } ${ this.phrase }</marquee>
-          <marquee scrollamount="30">${ this.phrase } ${ this.phrase }</marquee>
-          <marquee scrollamount="30" direction="right">${ this.phrase } ${ this.phrase }</marquee>
-          <marquee scrollamount="30">${ this.phrase } ${ this.phrase }</marquee>
-          <marquee scrollamount="30" direction="right">${ this.phrase } ${ this.phrase }</marquee>
-          <marquee scrollamount="30">${ this.phrase } ${ this.phrase }</marquee>
-          <marquee scrollamount="30" direction="right">${ this.phrase } ${ this.phrase }</marquee>
-        </div>
-      `
-      container.appendChild(this.el)
-    }
-
-    init() {
-      d3.select(this.el).transition().duration(500).style('opacity', 1.0)
-    }
-
-    step(msElapsed) {
-
-    }
-
-    render() {
-
-    }
-
-    pointerUp() {
-      d3.select(this.el).transition().duration(250).style('opacity', 0.0)
-        .on('end', () => this.container.removeChild(this.el))
-    }
-
-  }
 
   let possibleAnimations = [
-    // GrowingLetter,
-    // JennyHolzer,
+    GrowingLetter,
+    JennyHolzer,
     LetterRoulette
   ]
 
+  possibleAnimations.forEach(a => a.preload())
+
+
+  let sequence = [
+    { type: 'animation', class: LetterRoulette },
+    { type: 'animation', class: LetterRoulette },
+    { type: 'animation', class: GrowingLetter },
+    { type: 'animation', class: GrowingLetter },
+    { type: 'animation', class: JennyHolzer },
+    { type: 'function', function: (e) => plopVideo(e) }
+  ]
+
+
+  let tappedOnce = false
+  let currentPointer = null
 
   let pointerAnimation
   document.addEventListener('pointerdown', (e) => {
-    let animation = _.sample(possibleAnimations)
-    pointerAnimation = new animation(presentationContainer, e.clientX, e.clientY)
-    pointerAnimation.init && pointerAnimation.init()
+    e.stopPropagation()
+    
+    if (!tappedOnce) {
+      tappedOnce = true
+      backgroundContainer.style.background = 'white'
+      backgroundContainer.style.opacity = 0
+      return
+    }
+
+    // Only one touch at a time for now
+    if (app.currentPointer) {
+      return
+    }
+    
+    app.currentPointer = e.pointerId
+
+    if (sequence.length > 0) {
+      let nextThing = sequence.shift()
+      if (nextThing.type === 'function') {
+        nextThing.function(e)
+      } else {
+        pointerAnimation = new nextThing.class(app, presentationContainer, e.clientX, e.clientY)
+        pointerAnimation.init && pointerAnimation.init()
+      }
+    } else {
+      let animation = _.sample(possibleAnimations)
+      pointerAnimation = new animation(app, presentationContainer, e.clientX, e.clientY)
+      pointerAnimation.init && pointerAnimation.init()
+    }
+  })
+
+  let prevX
+  let prevY
+  document.addEventListener('pointermove', (e) => {
+    if (e.pointerId !== app.currentPointer) {
+      return
+    }
+    
+    if (app.draggingElement && prevX && prevY) {
+      let deltaX = e.clientX - prevX
+      let deltaY = e.clientY - prevY
+      app.draggingElement.update(deltaX, deltaY)
+    }
+
+    prevX = e.clientX
+    prevY = e.clientY
   })
 
   document.addEventListener('pointerup', (e) => {
+    if (e.pointerId !== app.currentPointer) {
+      return
+    }
+
+    app.currentPointer = null
+    
     pointerAnimation && pointerAnimation.pointerUp()
+
+    pointerAnimation = null
+
+    app.draggingElement && app.draggingElement.pointerUp()
+
+    app.draggingElement = null
+
+    prevX = null
+    prevY = null
   })
 
   MainLoop
@@ -184,10 +231,11 @@ function loadAssets() {
     })
   })
 
-  assets.videos.forEach(asset => {
+  let videos = [{ url: 'assets/videos/hand-4.mp4' }]
+  videos.forEach(asset => {
     let videoEl = document.createElement('video')
     videoEl.src = `../${asset.url}`
-    videoEl.loop = true
+    videoEl.setAttribute('muted', true)
     videoEl.style.width = `${baseSize}px`
     assetContainer.appendChild(videoEl)
     allAssets.push({

@@ -16,8 +16,8 @@ export default class Arrow {
   step(ms) {
     // increment current position
     if (this.mouse) {
-      let angleBetweenCurrentPositionAndMouse = Math.atan2(this.current.y - this.mouse.y, this.current.x - this.mouse.x)
-      this.angle -= (angleBetweenCurrentPositionAndMouse - this.angle) * ms / 1000
+      let angleBetweenCurrentPositionAndMouse = Math.atan2(this.mouse.y - this.current.y, this.mouse.x - this.current.x)
+      this.angle += (angleBetweenCurrentPositionAndMouse - this.angle) * ms / 1000
     }
     this.current.x += this.speed * ms / 1000 * Math.cos(this.angle)
     this.current.y += this.speed * ms / 1000 * Math.sin(this.angle)

@@ -1,0 +1,134 @@
+body {
+  margin: 0px;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  touch-action: none;
+  user-select: none;
+  font-family: sans-serif;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  background: black;
+}
+
+.target {
+  position: absolute;
+  top: 0px;
+  left: 0px;
+  right: 0px;
+  bottom: 0px;
+  color: #b4b4b4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  z-index: 40;
+}
+
+.presentation-container {
+  position: absolute;
+  top: 0px;
+  right: 0px;
+  left: 0px;
+  bottom: 0px;
+
+  img, video {
+    position: absolute;
+  }
+
+  img {
+    mix-blend-mode: lighten;
+  }
+}
+
+.click-blocker {
+  position: absolute;
+  top: 0px;
+  right: 0px;
+  left: 0px;
+  bottom: 0px;
+}
+
+.left-touch-target {
+  position: absolute;
+  left: 0px;
+  top: 0px;
+  bottom: 0px;
+  z-index: 50;
+  right: 50%;
+}
+
+.right-touch-target {
+  position: absolute;
+  right: 0px;
+  top: 0px;
+  bottom: 0px;
+  z-index: 50;
+  left: 50%;
+}
+
+.blocker {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  background: black;
+  position: absolute;
+  top: 0px;
+  left: 0px;
+  right: 0px;
+  bottom: 0px;
+  z-index: 60;
+}
+
+.text-container, .text-animation-container {
+  position: absolute;
+  opacity: 0;
+  left: 20px;
+  right: 20px;
+  bottom: 10px;
+  font-size: 30px;
+  font-family: 'Italianno', cursive;
+  color: white;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.translation-container {
+  position: absolute;
+}
+
+.video-placeholder {
+  border: 1px solid #eee;
+
+  &.loaded {
+    border: none;
+  }
+}
+
+.toggle-journal-button {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 60px;
+  height: 60px;
+  right: 10px;
+  bottom: 10px;
+  cursor: pointer;
+  z-index: 100;
+  background: grey;
+  border-radius: 4px;
+  padding: 8px;
+  box-sizing: border-box;
+  border: 1px solid black;
+
+  img {
+    width: 100%;
+  }
+}
+
+@import 'journal-component.less';
